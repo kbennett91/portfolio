@@ -20,6 +20,8 @@ Drawing on medical anthropology, this project follows how people with Type 1 dia
 
 I lead a multi-phase research annotation program end to end, coordinating engineering, data architecture, and research staff from study design through data delivery.
 
+   **Tool demo:** [Transcript Viewer](dashboards/transcript-viewer.html) — a dashboard I built so annotators could review speaker-labeled transcripts, search them, and see who held the floor. Runs on a fictional sample.
+
 ## Publications & Work in Progress
 
 - Trager, J., & Bennett, K. "Teaching Humans to Teach AI to Analyze Police Footage: A Human-Centered Framework for Responsible Subjective AI in Sociotechnical Systems." *Preprint.*
