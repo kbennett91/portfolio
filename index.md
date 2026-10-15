@@ -22,7 +22,8 @@ I lead a multi-phase research annotation program end to end, coordinating engine
 
 ## Publications & Work in Progress
 
-- Alcocer, J., Bennett, K., Graeden, E., Graham, B., Muttram, H., & Weller, N. "LLM-Driven Ontology Development for Cross-Domain Data Integration within Interdisciplinary Research." *In preparation.*
+- Trager, J., & Bennett, K. "Teaching Humans to Teach AI to Analyze Police Footage: A Human-Centered Framework for Responsible Subjective AI in Sociotechnical Systems." *Preprint.*
+- Trager, J., Dehghani, M., Bennett, K., et al. (2024). "Everyday Respect Phase 2 Manual: Actions, Outcomes, Attitudes." Open Science Framework. [osf.io/py6md](https://osf.io/py6md)
 
 ## Contact
 
