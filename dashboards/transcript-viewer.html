@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcript Viewer — Portfolio Demo</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+.header { background: #1a1d27; border-bottom: 1px solid #2d3748; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.header h1 { font-size: 20px; font-weight: 600; color: #fff; }
+.header span { font-size: 13px; color: #718096; }
+.container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+.upload-area { background: #1a1d27; border: 2px dashed #2d3748; border-radius: 12px; padding: 28px; text-align: center; margin-bottom: 28px; cursor: pointer; transition: all 0.2s; }
+.upload-area:hover, .upload-area.drag { border-color: #4a6cf7; }
+.demo-note { background: #1a1d27; border: 1px solid #2d3748; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; color: #a0aec0; line-height: 1.6; }
+.demo-note b { color: #e2e8f0; }
+.demo-actions { display: flex; gap: 10px; margin: -14px 0 28px; flex-wrap: wrap; }
+.demo-btn { padding: 8px 14px; border-radius: 8px; border: 1px solid #2d3748; background: #1a1d27; color: #a0aec0; font-size: 13px; cursor: pointer; }
+.demo-btn:hover { border-color: #4a6cf7; color: #fff; }
+.upload-error { color: #fc8181; font-size: 13px; margin: -18px 0 24px; display: none; }
+.upload-area h3 { color: #a0aec0; font-size: 16px; }
+.upload-area p { color: #718096; font-size: 13px; margin-top: 6px; }
+#file-input { display: none; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+.stat { background: #1a1d27; border: 1px solid #2d3748; border-radius: 12px; padding: 16px 18px; }
+.stat-label { font-size: 11px; color: #718096; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-value { font-size: 22px; font-weight: 600; color: #fff; }
+.stat-sub { font-size: 11px; color: #4a5568; margin-top: 3px; }
+.timeline-wrap { margin-bottom: 24px; }
+.timeline-bar { height: 44px; border-radius: 8px; overflow: hidden; display: flex; margin-bottom: 6px; background: #1a1d27; }
+.tl-seg { height: 100%; cursor: pointer; transition: opacity 0.15s; }
+.tl-seg:hover { opacity: 0.75; }
+.timeline-labels { display: flex; justify-content: space-between; font-size: 11px; color: #4a5568; font-family: monospace; }
+.legend { display: flex; gap: 18px; margin-bottom: 20px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #a0aec0; }
+.legend-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.search-wrap { flex: 1; min-width: 200px; position: relative; }
+.search { width: 100%; background: #1a1d27; border: 1px solid #2d3748; border-radius: 8px; padding: 10px 16px; color: #e2e8f0; font-size: 14px; outline: none; }
+.search:focus { border-color: #4a6cf7; }
+.seg-count { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #4a5568; pointer-events: none; }
+.filter-btn { padding: 8px 14px; border-radius: 20px; border: 1px solid #2d3748; background: #1a1d27; color: #718096; font-size: 13px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.filter-btn:hover { background: #2d3748; color: #e2e8f0; }
+.filter-btn.active { border-color: transparent; color: #fff; font-weight: 500; }
+.filter-btn.f-all.active { background: #4a5568; }
+.filter-btn.f-pp.active { background: #1e3a8a; color: #93c5fd; }
+.filter-btn.f-pn.active { background: #1c4532; color: #9ae6b4; }
+.filter-btn.f-cd.active { background: #7b341e; color: #fbd38d; }
+.filter-btn.f-un.active { background: #44337a; color: #d6bcfa; }
+.transcript { display: flex; flex-direction: column; gap: 10px; }
+.seg { background: #1a1d27; border: 1px solid #2d3748; border-radius: 10px; padding: 14px 18px; display: flex; gap: 14px; transition: border-color 0.15s; }
+.seg:hover { border-color: #4a5568; }
+.seg.hidden { display: none; }
+.seg-left { display: flex; flex-direction: column; align-items: flex-end; min-width: 68px; gap: 2px; padding-top: 2px; }
+.ts { font-size: 12px; color: #718096; font-family: monospace; }
+.ts-end { font-size: 11px; color: #4a5568; font-family: monospace; }
+.dur { font-size: 10px; color: #2d3748; margin-top: 2px; }
+.seg-right { flex: 1; }
+.seg-top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
+.spk-name { font-size: 12px; color: #718096; font-family: monospace; }
+.badge { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; display: inline-block; }
+.seg-text { font-size: 15px; color: #e2e8f0; line-height: 1.65; }
+.seg-text .unintel { color: #4a5568; font-style: italic; font-size: 13px; }
+.seg-key { font-size: 11px; color: #2d3748; margin-top: 6px; }
+.seg.pp { border-left: 3px solid #4a6cf7; }
+.seg.pn { border-left: 3px solid #48bb78; }
+.seg.cd { border-left: 3px solid #ed8936; }
+.seg.un { border-left: 3px solid #805ad5; }
+.badge.pp { background: #1e3a8a; color: #93c5fd; }
+.badge.pn { background: #1c4532; color: #9ae6b4; }
+.badge.cd { background: #7b341e; color: #fbd38d; }
+.badge.un { background: #44337a; color: #d6bcfa; }
+.no-results { text-align: center; padding: 48px; color: #4a5568; font-size: 15px; }
+.meta-bar { background: #1a1d27; border: 1px solid #2d3748; border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; font-size: 12px; color: #718096; display: flex; gap: 20px; flex-wrap: wrap; }
+.meta-bar span { color: #a0aec0; }
+@media (max-width: 620px) { .stats { grid-template-columns: repeat(2,1fr); } .header { flex-direction: column; align-items: flex-start; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Everyday Respect — Transcript Viewer</h1>
+  <span id="file-label">Fictional sample transcript loaded</span>
+</div>
+<div class="container">
+  <div class="demo-note"><b>Portfolio demo.</b> This tool was built to let annotation staff review speaker-labeled transcripts of recorded police–civilian interactions. Everything shown here is a short <b>fictional</b> sample written for demonstration; no project data is included. Download the sample file below, then upload it (or your own file in the same format) to see the viewer load it.</div>
+  <div class="upload-area" onclick="document.getElementById('file-input').click()">
+    <h3>Upload your transcript JSON file</h3>
+    <p>Click here or drag and drop — supports phase0, phase1a, and raw transcript formats</p>
+    <input type="file" id="file-input" accept=".json">
+  </div>
+  <div class="demo-actions">
+    <button class="demo-btn" onclick="downloadSample()">Download sample JSON</button>
+    <button class="demo-btn" onclick="resetSample()">Reset to sample</button>
+  </div>
+  <div class="upload-error" id="upload-error"></div>
+
+  <div class="meta-bar" id="meta-bar" style="display:none"></div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Total Segments</div><div class="stat-value" id="s-total">—</div><div class="stat-sub" id="s-labeled">—</div></div>
+    <div class="stat"><div class="stat-label">Duration</div><div class="stat-value" id="s-dur">—</div><div class="stat-sub" id="s-dur-sub">total recording</div></div>
+    <div class="stat"><div class="stat-label">Police Speaking</div><div class="stat-value" id="s-police" style="color:#93c5fd">—</div><div class="stat-sub" id="s-police-sub">—</div></div>
+    <div class="stat"><div class="stat-label">Civilian Speaking</div><div class="stat-value" id="s-civ" style="color:#fbd38d">—</div><div class="stat-sub" id="s-civ-sub">—</div></div>
+  </div>
+
+  <div class="timeline-wrap">
+    <div class="timeline-bar" id="tl-bar"></div>
+    <div class="timeline-labels" id="tl-labels"></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4a6cf7"></div>Police Primary</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#48bb78"></div>Police Non-Primary</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ed8936"></div>Civilian Driver</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#805ad5"></div>Unlabeled</div>
+  </div>
+
+  <div class="controls">
+    <div class="search-wrap">
+      <input class="search" id="search" type="text" placeholder="Search transcript...">
+      <span class="seg-count" id="seg-count"></span>
+    </div>
+    <button class="filter-btn f-all active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn f-pp" onclick="setFilter('pp',this)">Police Primary</button>
+    <button class="filter-btn f-pn" onclick="setFilter('pn',this)">Police Non-Primary</button>
+    <button class="filter-btn f-cd" onclick="setFilter('cd',this)">Civilian</button>
+    <button class="filter-btn f-un" onclick="setFilter('un',this)">Unlabeled</button>
+  </div>
+
+  <div class="transcript" id="transcript"></div>
+  <div class="no-results" id="no-results" style="display:none">No segments match your search.</div>
+</div>
+
+<script>
+let currentFilter = 'all';
+let currentData = null;
+
+const SAMPLE = {"meta":{"audio_file":"sample_traffic_stop.mp4","duration_seconds":68,"model":"chirp_3 (V2)","region":"us"},"segments":[{"start":0.0,"end":3.2,"speaker":"SPEAKER_1_PRIMARY","text":"Good evening sir, do you know why I pulled you over tonight?","key":1,"label":"person:Police:Primary","label_identifier":"2"},{"start":3.5,"end":6.1,"text":"No officer, I'm not sure what I did wrong.","speaker":"SPEAKER_2_AUDIO","key":2,"label":"person:Civilian:Driver","label_identifier":"1"},{"start":6.8,"end":12.4,"speaker":"SPEAKER_1_PRIMARY","text":"You were going 47 in a 35 mile per hour zone. Can I see your license and registration please?","key":3,"label":"person:Police:Primary","label_identifier":"2"},{"start":13.0,"end":17.2,"text":"Oh I'm sorry, I didn't realize. Let me get that for you right now.","speaker":"SPEAKER_2_AUDIO","key":4,"label":"person:Civilian:Driver","label_identifier":"1"},{"start":17.8,"end":22.0,"speaker":"SPEAKER_1_PRIMARY","text":"Take your time sir. Is there anything in the vehicle I should know about?","key":5,"label":"person:Police:Primary","label_identifier":"2"},{"start":22.4,"end":25.9,"text":"No nothing like that. Here is my license.","speaker":"SPEAKER_2_AUDIO","key":6,"label":"person:Civilian:Driver","label_identifier":"1"},{"start":26.3,"end":32.0,"speaker":"SPEAKER_1_PRIMARY","text":"Thank you. I'm also going to need your proof of insurance. Please stay in the vehicle.","key":7,"label":"person:Police:Primary","label_identifier":"2"},{"start":32.5,"end":35.2,"text":"Of course officer. Is everything okay?","speaker":"SPEAKER_2_AUDIO","key":8,"label":"person:Civilian:Driver","label_identifier":"1"},{"start":35.8,"end":40.1,"speaker":"SPEAKER_2_BACKUP","text":"Backup unit checking in. All clear on the perimeter.","key":9,"label":"person:Police:NonPrimary","label_identifier":"1"},{"start":41.5,"end":48.3,"speaker":"SPEAKER_1_PRIMARY","text":"Sir your license comes back clean. I'm going to issue you a written warning today. Please slow down in residential zones.","key":10,"label":"person:Police:Primary","label_identifier":"2"},{"start":49.0,"end":52.8,"text":"Thank you officer. I really appreciate that. I will definitely be more careful.","speaker":"SPEAKER_2_AUDIO","key":11,"label":"person:Civilian:Driver","label_identifier":"1"},{"start":53.5,"end":58.8,"speaker":"SPEAKER_1_PRIMARY","text":"You're free to go. Drive safe tonight and have a good evening.","key":12,"label":"person:Police:Primary","label_identifier":"2"},{"start":55.2,"end":56.1,"text":"<UNINTELLIGIBLE>","speaker":"SPEAKER_00","key":13,"label":null,"label_identifier":null}]};
+
+function fmt(s) {
+  if(isNaN(s)) return '0:00';
+  const m = Math.floor(s/60), sec = Math.floor(s%60);
+  return m+':'+sec.toString().padStart(2,'0');
+}
+
+function fmtFull(s) {
+  if(isNaN(s)) return '0:00.0';
+  const m = Math.floor(s/60), sec = (s%60).toFixed(1);
+  return m+':'+sec.toString().padStart(4,'0');
+}
+
+function getClass(label) {
+  if(!label) return 'un';
+  if(label.includes('Police:Primary')) return 'pp';
+  if(label.includes('Police:NonPrimary')) return 'pn';
+  if(label.includes('Civilian')) return 'cd';
+  return 'un';
+}
+
+function getBadgeName(label) {
+  if(!label) return 'Unlabeled';
+  if(label.includes('Police:Primary')) return 'Police Primary';
+  if(label.includes('Police:NonPrimary')) return 'Police Non-Primary';
+  if(label.includes('Civilian:Driver')) return 'Civilian Driver';
+  return 'Unlabeled';
+}
+
+function getColor(label) {
+  if(!label) return '#805ad5';
+  if(label.includes('Police:Primary')) return '#4a6cf7';
+  if(label.includes('Police:NonPrimary')) return '#48bb78';
+  if(label.includes('Civilian')) return '#ed8936';
+  return '#805ad5';
+}
+
+function renderMeta(meta) {
+  if(!meta) return;
+  const bar = document.getElementById('meta-bar');
+  bar.style.display = 'flex';
+  bar.innerHTML = `
+    <div>Audio file: <span>${meta.audio_file ? meta.audio_file.split('/').pop() : 'Unknown'}</span></div>
+    <div>Duration: <span>${fmt(meta.duration_seconds)}</span></div>
+    <div>Model: <span>${meta.model || 'Unknown'}</span></div>
+    <div>Region: <span>${meta.region || 'Unknown'}</span></div>
+  `;
+}
+
+function renderStats(segs, meta) {
+  const total = segs.length;
+  const maxEnd = meta && meta.duration_seconds ? meta.duration_seconds : Math.max(...segs.map(s=>s.end));
+  const labeled = segs.filter(s=>s.label).length;
+  const policeDur = segs.filter(s=>s.label&&s.label.includes('Police')).reduce((a,s)=>a+(s.end-s.start),0);
+  const civDur = segs.filter(s=>s.label&&s.label.includes('Civilian')).reduce((a,s)=>a+(s.end-s.start),0);
+  const totalSpeak = segs.reduce((a,s)=>a+(s.end-s.start),0);
+
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-labeled').textContent = labeled + ' labeled segments';
+  document.getElementById('s-dur').textContent = fmt(maxEnd);
+  document.getElementById('s-police').textContent = totalSpeak>0 ? Math.round((policeDur/totalSpeak)*100)+'%' : '0%';
+  document.getElementById('s-police-sub').textContent = fmt(policeDur) + ' speaking time';
+  document.getElementById('s-civ').textContent = totalSpeak>0 ? Math.round((civDur/totalSpeak)*100)+'%' : '0%';
+  document.getElementById('s-civ-sub').textContent = fmt(civDur) + ' speaking time';
+}
+
+function renderTimeline(segs, meta) {
+  const bar = document.getElementById('tl-bar');
+  const labels = document.getElementById('tl-labels');
+  bar.innerHTML = ''; labels.innerHTML = '';
+  const maxEnd = meta && meta.duration_seconds ? meta.duration_seconds : Math.max(...segs.map(s=>s.end));
+  if(!maxEnd || maxEnd<=0) return;
+
+  const sorted = [...segs].sort((a,b)=>a.start-b.start);
+  sorted.forEach(seg => {
+    const w = ((seg.end - seg.start) / maxEnd) * 100;
+    if(w <= 0) return;
+    const d = document.createElement('div');
+    d.className = 'tl-seg';
+    d.style.width = Math.max(w, 0.3) + '%';
+    d.style.background = getColor(seg.label);
+    d.title = fmtFull(seg.start) + ' — ' + fmtFull(seg.end) + ': ' + (seg.text||'').substring(0,60);
+    bar.appendChild(d);
+  });
+
+  for(let i=0; i<=5; i++) {
+    const sp = document.createElement('span');
+    sp.textContent = fmt((maxEnd/5)*i);
+    labels.appendChild(sp);
+  }
+}
+
+function renderTranscript(segs, search='') {
+  const container = document.getElementById('transcript');
+  const noRes = document.getElementById('no-results');
+  const countEl = document.getElementById('seg-count');
+  container.innerHTML = '';
+  let visible = 0;
+  const sorted = [...segs].sort((a,b)=>a.start-b.start);
+
+  sorted.forEach(seg => {
+    const cls = getClass(seg.label);
+    const matchFilter = currentFilter==='all' || cls===currentFilter;
+    const matchSearch = !search || (seg.text||'').toLowerCase().includes(search.toLowerCase()) || (seg.speaker||'').toLowerCase().includes(search.toLowerCase());
+    if(!matchFilter || !matchSearch) return;
+    visible++;
+
+    const rawText = seg.text || '';
+    const displayText = rawText.replace(/<UNINTELLIGIBLE>/g, '<span class="unintel">[unintelligible]</span>');
+    const highlighted = search ? displayText.replace(new RegExp('('+search.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')', 'gi'), '<mark style="background:#4a6cf7;color:#fff;border-radius:2px;padding:0 2px">$1</mark>') : displayText;
+
+    const div = document.createElement('div');
+    div.className = 'seg ' + cls;
+    div.innerHTML = `
+      <div class="seg-left">
+        <div class="ts">${fmtFull(seg.start)}</div>
+        <div class="ts-end">→ ${fmtFull(seg.end)}</div>
+        <div class="dur">${(seg.end-seg.start).toFixed(1)}s</div>
+      </div>
+      <div class="seg-right">
+        <div class="seg-top">
+          <span class="spk-name">${seg.speaker||'unknown'}</span>
+          <span class="badge ${cls}">${getBadgeName(seg.label)}</span>
+        </div>
+        <div class="seg-text">${highlighted}</div>
+        <div class="seg-key">segment #${seg.key}</div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+
+  countEl.textContent = visible + ' segments';
+  noRes.style.display = visible===0 ? 'block' : 'none';
+}
+
+function render(data) {
+  currentData = data;
+  const segs = data.segments || [];
+  renderMeta(data.meta);
+  renderStats(segs, data.meta);
+  renderTimeline(segs, data.meta);
+  renderTranscript(segs, document.getElementById('search').value);
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(currentData) renderTranscript(currentData.segments||[], document.getElementById('search').value);
+}
+
+document.getElementById('search').addEventListener('input', e => {
+  if(currentData) renderTranscript(currentData.segments||[], e.target.value);
+});
+
+function showError(msg) {
+  const el = document.getElementById('upload-error');
+  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+}
+
+function loadFile(file) {
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result.trim());
+      if(!data.segments) { showError('No segments found in this file.'); return; }
+      showError('');
+      document.getElementById('file-label').textContent = file.name;
+      render(data);
+    } catch(err) {
+      showError('Could not read this file. Make sure it is a valid JSON transcript file.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('file-input').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+
+const dropArea = document.querySelector('.upload-area');
+['dragenter','dragover'].forEach(t => dropArea.addEventListener(t, e => { e.preventDefault(); dropArea.classList.add('drag'); }));
+['dragleave','drop'].forEach(t => dropArea.addEventListener(t, e => { e.preventDefault(); dropArea.classList.remove('drag'); }));
+dropArea.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+
+function downloadSample() {
+  const blob = new Blob([JSON.stringify(SAMPLE, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'sample-transcript.json';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+function resetSample() {
+  showError('');
+  document.getElementById('file-label').textContent = 'Fictional sample transcript loaded';
+  render(SAMPLE);
+}
+
+render(SAMPLE);
+</script>
+</body>
+</html>
